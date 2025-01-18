@@ -131,3 +131,10 @@ jobs:
           sudo journalctl -u docker -l --no-pager
         if: ${{ always() }}
         continue-on-error: true
+      - name: After script - postgres
+        run: |
+          set -x
+          sudo -u postgres psql -c "\dt" bricksllmdb
+          sudo -u postgres psql -c "\du" bricksllmdb
+        if: ${{ always() }}
+        continue-on-error: true
