@@ -10,6 +10,7 @@
   vars:
     bricksllm_mode: docker
     bricksllm_no_log: false
+    docker_install_compose: true
   pre_tasks:
     - name: Ubuntu | Install python3
       ansible.builtin.raw: test -e /usr/bin/python3 || (apt -y update && apt install -y python3-minimal)
