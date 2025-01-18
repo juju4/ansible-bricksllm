@@ -21,6 +21,7 @@ bricksllm_dockerfile_lineschanges:
     }
 
 bricksllm_testing: false
+bricksllm_no_log: true
 
 proxy_env:
 # proxy_env:

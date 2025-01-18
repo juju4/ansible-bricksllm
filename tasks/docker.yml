@@ -39,7 +39,7 @@
   ansible.builtin.set_fact:
     redis_pass: "{{ lookup('community.general.random_string', length=32, special=false) }}"
     postgres_db_pass: "{{ lookup('community.general.random_string', length=32, special=false) }}"
-  no_log: true
+  no_log: "{{ bricksllm_no_log }}"
 
 - name: Set docker-compose.yml
   ansible.builtin.copy:
@@ -101,7 +101,7 @@
     mode: '0644'
     owner: "{{ bricksllm_user }}"
     validate: 'docker-compose -f %s config --dry-run'
-  no_log: true
+  no_log: "{{ bricksllm_no_log }}"
 
 # FIXME! nok ansible, ok manual cli `time docker build -t bricksllm-local:1.0.1 .`
 # https://github.com/alpinelinux/docker-alpine/issues/98
