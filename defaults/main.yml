@@ -21,3 +21,8 @@ bricksllm_dockerfile_lineschanges:
     }
 
 bricksllm_testing: false
+
+proxy_env:
+# proxy_env:
+#   http_proxy: http://192.168.1.254:3128
+#   https_proxy: http://192.168.1.254:3128
