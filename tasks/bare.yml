@@ -1,0 +1,12 @@
+---
+
+- name: Build BricksLLM
+  ansible.builtin.command:
+    cmd: go build -ldflags="-s -w" -o ./bin/bricksllm ./cmd/bricksllm/main.go
+  args:
+    chdir: "{{ bricksllm_home }}/BricksLLM"
+    creates: "{{ bricksllm_home }}/BricksLLM/bin/bricksllm"
+  become: yes
+  become_user: "{{ bricksllm_user }}"
+
+# FIXME! systemd?

@@ -1,0 +1,8 @@
+---
+
+roles:
+  - name: geerlingguy.postgresql
+  - name: geerlingguy.redis
+  - name: juju4.golang
+    src: https://github.com/juju4/ansible-golang/
+    version: main

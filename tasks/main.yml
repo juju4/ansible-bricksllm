@@ -1,0 +1,41 @@
+---
+
+- name: Ensure bricksllm user exists
+  ansible.builtin.user:
+    name: "{{ bricksllm_user }}"
+    home: "{{ bricksllm_home }}"
+    system: true
+    groups: "{% if bricksllm_mode == 'docker' %}docker{% else %}{{ omit }}{% endif %}"
+    append: "{% if bricksllm_mode == 'docker' %}yes{% else %}{{ omit }}{% endif %}"
+  become: yes
+
+- name: Git clone BricksLLM
+  ansible.builtin.git:
+    repo: https://github.com/bricks-cloud/BricksLLM
+    dest: "{{ bricksllm_home }}/BricksLLM"
+    version: "{{ bricksllm_version }}"
+    update: no
+    force: no
+  become: yes
+  become_user: "{{ bricksllm_user }}"
+
+- name: Docker mode
+  when:
+    - bricksllm_mode == 'docker'
+  block:
+    - name: Import docker-proxy
+      ansible.builtin.import_tasks: docker-proxy.yml
+    - name: Import docker
+      ansible.builtin.import_tasks: docker.yml
+
+- name: Native mode
+  when:
+    - bricksllm_mode == 'native'
+  block:
+    - name: Import bare
+      ansible.builtin.import_tasks: bare.yml
+
+- name: Import testing
+  ansible.builtin.import_tasks: testing.yml
+  when:
+    - bricksllm_testing | bool

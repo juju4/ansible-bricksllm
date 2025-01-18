@@ -1,0 +1,43 @@
+---
+
+- name: Create a provider setting
+  ansible.builtin.uri:
+    url: http://localhost:8001/api/provider-settings
+    method: PUT
+    body_format: json
+    status_code: [200, 202]
+    return_content: true
+    headers:
+      Content-Type: application/json
+    body: |
+      {
+        "provider":"openai",
+        "setting": {
+          "apikey": "YOUR_OPENAI_KEY"
+        }
+      }
+  register: bricks_provider
+
+- name: Debug | var bricks_provider
+  ansible.builtin.debug:
+    var: bricks_provider
+
+- name: Create a Bricks API key
+  ansible.builtin.uri:
+    url: http://localhost:8001/api/key-management/keys
+    method: PUT
+    body_format: json
+    status_code: [200, 202]
+    return_content: true
+    headers:
+      Content-Type: application/json
+    body: |
+      {
+        "name": "My Secret Key",
+        "key": "my-secret-key",
+        "tags": ["mykey"],
+        "settingIds": ["ID_FROM_STEP_FOUR"],
+        "rateLimitOverTime": 2,
+        "rateLimitUnit": "m",
+        "costLimitInUsd": 0.25
+      }

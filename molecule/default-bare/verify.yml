@@ -1,0 +1,93 @@
+---
+
+- name: Verify
+  hosts: "{{ playbook_hosts | default('all') }}"
+  vars:
+    test_dns:
+      - github.com
+      - proxy.golang.org
+    exec_file: /var/lib/bricksllm/BricksLLM/bin/bricksllm
+    processes:
+      - { u: postgres, p: postgres }
+      - { u: redis, p: redis-server }
+    ports:
+      # postgres
+      - { h: 127.0.0.1, p: 5432 }
+      # redis
+      - { h: 127.0.0.1, p: 6379 }
+      # bricksllm
+      - { h: 127.0.0.1, p: 8080 }
+    is_container: false
+  pre_tasks:
+    - name: RedHat | Ensure ps is present
+      ansible.builtin.package:
+        name: procps-ng
+        state: present
+      when: ansible_os_family == "RedHat" and ansible_distribution_major_version | int >= 8
+    - name: Debian | Ensure ps is present
+      ansible.builtin.package:
+        name: procps
+        state: present
+      when: ansible_os_family == "Debian"
+    - name: Debug | var ansible_virtualization_type
+      ansible.builtin.debug:
+        var: ansible_virtualization_type
+    - name: Set fact is_container
+      ansible.builtin.set_fact:
+        is_container: true
+      when: >
+        (ansible_virtualization_type is defined and
+          (ansible_virtualization_type == "docker"
+           or ansible_virtualization_type == "containerd"
+           or ansible_virtualization_type == "container"
+          )
+        )
+  tasks:
+    - name: Check executable
+      ansible.builtin.stat:
+        path: "{{ exec_file }}"
+      register: bin1
+      become: yes
+    - name: Validate executable is present
+      ansible.builtin.assert:
+        that:
+          - bin1.stat.exists and bin1.stat.size != 0 and bin1.stat.mode == '0775'
+
+    - name: Ensure processes are running
+      ansible.builtin.command:
+        cmd: "pgrep -u {{ item.u }} {{ item.p }}"
+      register: ps
+      changed_when: false
+      failed_when: false
+      loop: "{{ processes }}"
+    - name: Validate ps output
+      ansible.builtin.assert:
+        that: "{{ item.stdout }}"
+      loop: "{{ processes }}"
+      when:
+        - not is_container|bool
+
+    - name: Check all processes
+      ansible.builtin.command: ps aux
+      changed_when: false
+      register: psa
+    - name: Debug | ps aux output
+      ansible.builtin.debug:
+        var: psa
+        verbosity: 1
+
+    - name: Ensure ports are listening
+      ansible.builtin.wait_for:
+        host: "{{ item.h }}"
+        port: "{{ item.p }}"
+        timeout: 10
+      with_items: "{{ ports }}"
+      when:
+        - not is_container|bool
+
+    - name: Test DNS resolution
+      ansible.builtin.command:
+        cmd: "host {{ item }}"
+      changed_when: false
+      register: dig_dns
+      loop: "{{ test_dns }}"

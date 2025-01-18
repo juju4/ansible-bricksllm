@@ -1,0 +1,22 @@
+---
+galaxy_info:
+  role_name: bricksllm
+  author: juju4
+  description: Setup [BricksLLM, Enterprise-grade API gateway that helps you monitor and impose cost or rate limits per API key](https://github.com/bricks-cloud/BricksLLM)
+  license: BSD
+  min_ansible_version: '1.9'
+  platforms:
+    - name: EL
+      versions:
+        - all
+    - name: Ubuntu
+      versions:
+        - jammy
+        - focal
+        - bionic
+  galaxy_tags:
+    - gateway
+    - ai
+    - cost
+    - acl
+dependencies: []

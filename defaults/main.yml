@@ -1,0 +1,23 @@
+---
+
+# main, Jan 5, 2025
+bricksllm_version: c7d80a62c2de95733c1e6c95a4eaedc50afaad75
+
+bricksllm_user: _bricks
+bricksllm_home: /var/lib/bricksllm
+
+bricksllm_mode: docker
+# bricksllm_mode: native
+
+# Update base distrib, add ENV...
+bricksllm_dockerfile_lineschanges:
+    # https://hub.docker.com/_/golang
+    - { re: '^FROM golang:.*',
+        l: 'FROM golang:1.23.4 AS build'
+    }
+    # https://hub.docker.com/_/alpine
+    - { re: '^FROM alpine:.*',
+        l: 'FROM alpine:3.21'
+    }
+
+bricksllm_testing: false

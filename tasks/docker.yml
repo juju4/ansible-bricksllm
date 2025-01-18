@@ -1,0 +1,134 @@
+---
+
+- name: Pull images
+  community.docker.docker_image:
+    name: "{{ item }}"
+    source: pull
+    # Select platform for pulling. If not specified, will pull whatever docker prefers.
+    pull:
+      platform: amd64
+  loop:
+    - redis:6.2-alpine
+    - postgres:14.1-alpine
+- name: Get Dockerfile stat
+  ansible.builtin.stat:
+    path: "{{ bricksllm_home }}/BricksLLM/Dockerfile"
+  register: has_dockerfile
+
+- name: Ensure Dockerfile
+  ansible.builtin.copy:
+    src: "{{ bricksllm_home }}/BricksLLM/Dockerfile.prod"
+    dest: "{{ bricksllm_home }}/BricksLLM/Dockerfile"
+    mode: '0644'
+    owner: "{{ bricksllm_user }}"
+    remote_src: true
+  when:
+    - not has_dockerfile.stat.exists
+
+- name: Add proxy to Dockerfile
+  ansible.builtin.lineinfile:
+    dest: "{{ bricksllm_home }}/BricksLLM/Dockerfile"
+    regexp: "{{ item.re }}"
+    line: "{{ item.l }}"
+    mode: '0644'
+    owner: "{{ bricksllm_user }}"
+    insertbefore: '{{ item.i | default(omit) }}'
+  loop: "{{ bricksllm_dockerfile_lineschanges }}"
+
+- name: Set fact
+  ansible.builtin.set_fact:
+    redis_pass: "{{ lookup('community.general.random_string', length=32, special=false) }}"
+    postgres_db_pass: "{{ lookup('community.general.random_string', length=32, special=false) }}"
+  no_log: true
+
+- name: Set docker-compose.yml
+  ansible.builtin.copy:
+    content: |
+      services:
+        redis:
+          # Feb 2021, https://hub.docker.com/layers/library/redis/6.2.0-alpine/images/sha256-fcbfb09a2179d7a8630b36ca3a6801825e3fa58b7bf6abceb0aafe16aae758b2
+          # image: redis:6.2-alpine
+          # https://hub.docker.com/layers/library/redis/6.2.17-alpine3.21/images/sha256-319aa68a7c9d09902017f4281af6a8b8b329ce3340089d96a833c8dffd7d1690
+          image: redis:6.2.17-alpine3.21
+          restart: always
+          ports:
+            - '6379:6379'
+          command: redis-server --save 20 1 --loglevel warning --requirepass {{ redis_pass }}
+          volumes:
+            - redis:/data
+        postgresql:
+          # Jan 2022, https://hub.docker.com/layers/library/postgres/14.1-alpine/images/sha256-884c142deb4a141f67489c807534ec6139f13b9a6432d2f87a4de283aaec0b5c
+          # image: postgres:14.1-alpine
+          # https://hub.docker.com/layers/library/postgres/14.15-alpine3.21/images/sha256-f7b7f6fa708e8cc421301b83d4f4c1f8c56019814f896b4d1fdf691b764c251f
+          image: postgres:14.15-alpine3.21
+          restart: always
+          environment:
+            - POSTGRES_USER=postgres
+            - POSTGRES_PASSWORD={{ postgres_db_pass }}
+            # - POSTGRES_PASSWORD=
+          ports:
+            - '5432:5432'
+          volumes:
+            - postgresql:/var/lib/postgresql/data
+        bricksllm:
+          depends_on:
+            - redis
+            - postgresql
+          # Jan 2025, https://hub.docker.com/r/luyuanxin1995/bricksllm/tags
+          # image: luyuanxin1995/bricksllm:latest
+          image: bricksllm-local:1.0.1
+          environment:
+            - POSTGRESQL_USERNAME=postgres
+            - POSTGRESQL_PASSWORD={{ postgres_db_pass }}
+            # - POSTGRESQL_PASSWORD=
+            - REDIS_PASSWORD={{ redis_pass }}
+            - POSTGRESQL_HOSTS=postgresql
+            - REDIS_HOSTS=redis
+            - PROMETHEUS_ENABLED=true
+            - PROMETHEUS_PORT=9112
+          ports:
+            - '8001:8001'
+            - '8002:8002'
+            - '9112:9112'
+          command:
+            - '-m=production'
+      volumes:
+        redis:
+          driver: local
+        postgresql:
+          driver: local
+    dest: "{{ bricksllm_home }}/BricksLLM/docker-compose.yml"
+    mode: '0644'
+    owner: "{{ bricksllm_user }}"
+    validate: 'docker-compose -f %s config --dry-run'
+  no_log: true
+
+# FIXME! nok ansible, ok manual cli `time docker build -t bricksllm-local:1.0.1 .`
+# https://github.com/alpinelinux/docker-alpine/issues/98
+# WARNING: fetching https://dl-cdn.alpinelinux.org/alpine/v3.20/community: Permission denied
+# ERROR: unable to select packages:', ' ca-certificates (no such package):
+- name: Build BricksLLM local docker image - ~5-10min
+  community.docker.docker_image:
+    name: bricksllm-local
+    build:
+      path: "{{ bricksllm_home }}/BricksLLM"
+    tag: 1.0.1
+    source: build
+  become: yes
+  become_user: "{{ bricksllm_user }}"
+
+# nok bricksllm-local container - postgres auth failed
+# {"level":"fatal","message":"error creating custom providers table: pq: password authentication failed for user \"postgres\""}
+# = correct on postgres side...
+# manual cli `docker-compose up` (or down)
+- name: Create and start services
+  community.docker.docker_compose_v2:
+    project_src: "{{ bricksllm_home }}/BricksLLM"
+  register: output
+  become: yes
+  become_user: "{{ bricksllm_user }}"
+  ignore_errors: true
+
+- name: Show results
+  ansible.builtin.debug:
+    var: output
