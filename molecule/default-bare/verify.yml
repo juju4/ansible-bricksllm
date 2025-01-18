@@ -63,7 +63,7 @@
     - name: Validate ps output
       ansible.builtin.assert:
         that: "{{ item.stdout }}"
-      loop: "{{ processes }}"
+      loop: "{{ processes.results }}"
       when:
         - not is_container|bool
 
