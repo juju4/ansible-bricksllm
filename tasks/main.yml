@@ -1,5 +1,10 @@
 ---
 
+- name: Ensure dependencies packages are present
+  ansible.builtin.package:
+    name: git
+    state: present
+
 - name: Ensure bricksllm user exists
   ansible.builtin.user:
     name: "{{ bricksllm_user }}"
