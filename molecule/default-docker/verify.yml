@@ -50,8 +50,9 @@
       loop: "{{ processes }}"
     - name: Validate ps output
       ansible.builtin.assert:
-        that: "{{ item.stdout }}"
-      loop: "{{ processes }}"
+        that:
+          - item.stdout | length > 0
+      loop: "{{ ps.results }}"
       when:
         - not is_container|bool
       ignore_errors: true  # noqa ignore-errors
