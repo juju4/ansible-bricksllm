@@ -113,8 +113,9 @@ jobs:
       - name: After script - files
         run: |
           set -x
-          ls /var/lib/bricksllm/BricksLLM/
-          ls /var/lib/bricksllm/BricksLLM/bin
+          sudo ls /var/lib/bricksllm/BricksLLM/
+          sudo ls /var/lib/bricksllm/BricksLLM/bin
+          sudo /var/lib/bricksllm/BricksLLM/bin/bricksllm
         if: ${{ always() }}
         continue-on-error: true
       - name: After script - docker
