@@ -137,6 +137,6 @@ jobs:
           sudo -u postgres psql -c "\l" bricksllmdb
           sudo -u postgres psql -c "\dt" bricksllmdb
           sudo -u postgres psql -c "\du" bricksllmdb
-          sudo -u _bricks env PGPASSWORD=password psql -u bricksllm -c "\dt" bricksllmdb
+          sudo -u _bricks env PGPASSWORD=password psql -U bricksllm -c "\dt" bricksllmdb
         if: ${{ always() }}
         continue-on-error: true
