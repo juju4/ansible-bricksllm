@@ -115,7 +115,7 @@ jobs:
           set -x
           sudo ls /var/lib/bricksllm/BricksLLM/
           sudo ls /var/lib/bricksllm/BricksLLM/bin
-          sudo /var/lib/bricksllm/BricksLLM/bin/bricksllm
+          sudo -H -u _bricks /var/lib/bricksllm/BricksLLM/bin/bricksllm
         if: ${{ always() }}
         continue-on-error: true
       - name: After script - docker
