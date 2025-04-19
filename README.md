@@ -5,6 +5,10 @@
 
 Ansible role to setup [BricksLLM, Enterprise-grade API gateway that helps you monitor and impose cost or rate limits per API key](https://github.com/bricks-cloud/BricksLLM)
 
+Alternatives
+* [LiteLLM Proxy Server](https://docs.litellm.ai/docs/simple_proxy), https://github.com/BerriAI/litellm, https://docs.litellm.ai/docs/proxy/enterprise
+* https://observeapi.ashishb.net/
+
 ## Requirements & Dependencies
 
 ### Ansible
